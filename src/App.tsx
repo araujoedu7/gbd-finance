@@ -98,10 +98,11 @@ function TabPanel(props: TabPanelProps) {
       hidden={value !== index}
       id={`tabpanel-${index}`}
       aria-labelledby={`tab-${index}`}
+      style={{ width: '100%' }}
       {...other}
     >
       {value === index && (
-        <Box sx={{ p: 3 }}>
+        <Box sx={{ width: '100%' }}>
           {children}
         </Box>
       )}
@@ -111,17 +112,66 @@ function TabPanel(props: TabPanelProps) {
 
 function Home() {
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom>
+    <Box sx={{ width: '100%' }}>
+      <Typography variant="h4" gutterBottom align="center" sx={{ mb: 4 }}>
         Bem-vindo ao Gold Black Dragons
       </Typography>
-      <Typography variant="body1" paragraph>
-        Sistema de gestão da equipe Gold Black Dragons. Aqui você encontra:
-      </Typography>
-      <ul>
-        <Typography component="li" variant="body1">Controle financeiro dos alunos</Typography>
-        <Typography component="li" variant="body1">Informativos importantes da equipe</Typography>
-      </ul>
+      
+      <Paper elevation={3} sx={{ 
+        display: 'flex', 
+        flexDirection: { xs: 'column', md: 'row' },
+        overflow: 'hidden',
+        bgcolor: customColors.white,
+        borderRadius: 2
+      }}>
+        <Box sx={{ 
+          width: { xs: '100%', md: '50%' },
+          minHeight: { xs: '300px', md: '400px' },
+          position: 'relative',
+          overflow: 'hidden'
+        }}>
+          <Box
+            component="img"
+            src="/team-photo.jpg"
+            alt="Gold Black Dragons Team"
+            sx={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center'
+            }}
+          />
+        </Box>
+
+        <Box sx={{ 
+          width: { xs: '100%', md: '50%' },
+          p: 4,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center'
+        }}>
+          <Typography variant="h5" gutterBottom sx={{ color: customColors.black, mb: 2 }}>
+            Sobre a Equipe
+          </Typography>
+          <Typography variant="body1" paragraph sx={{ color: customColors.blackLight, mb: 2 }}>
+            A Gold Black Dragons é uma equipe dedicada à excelência no desenvolvimento de atletas e formação de campeões. Nossa missão é proporcionar um ambiente de treinamento de alta qualidade, combinando disciplina, técnica e valores esportivos.
+          </Typography>
+          <Typography variant="body1" paragraph sx={{ color: customColors.blackLight, mb: 2 }}>
+            Com uma metodologia única e professores altamente qualificados, buscamos não apenas formar atletas, mas também cidadãos comprometidos com o esporte e a sociedade.
+          </Typography>
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="h6" gutterBottom sx={{ color: customColors.gold }}>
+              Nossos Diferenciais:
+            </Typography>
+            <ul style={{ color: customColors.blackLight, paddingLeft: '1.5rem' }}>
+              <Typography component="li" variant="body1" sx={{ mb: 1 }}>Treinamento personalizado</Typography>
+              <Typography component="li" variant="body1" sx={{ mb: 1 }}>Infraestrutura completa</Typography>
+              <Typography component="li" variant="body1" sx={{ mb: 1 }}>Equipe técnica especializada</Typography>
+              <Typography component="li" variant="body1">Acompanhamento individual</Typography>
+            </ul>
+          </Box>
+        </Box>
+      </Paper>
     </Box>
   );
 }
@@ -173,8 +223,8 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-        <AppBar position="static">
+      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', width: '100%' }}>
+        <AppBar position="static" sx={{ width: '100%' }}>
           <Toolbar>
             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
               Gold Black Dragons
@@ -197,13 +247,23 @@ function App() {
           </Tabs>
         </AppBar>
 
-        <Container component="main" sx={{ mt: 4, mb: 4, flex: 1 }}>
+        <Container 
+          component="main" 
+          sx={{ 
+            mt: 4, 
+            mb: 4, 
+            flex: 1, 
+            maxWidth: 'none !important',
+            width: '100%',
+            px: { xs: 1, sm: 2 }
+          }}
+        >
           <TabPanel value={currentTab} index={0}>
             <Home />
           </TabPanel>
 
           <TabPanel value={currentTab} index={1}>
-            <Box sx={{ p: 3 }}>
+            <Box sx={{ p: { xs: 1, sm: 2 } }}>
               <AddStudent onAddStudent={handleAddStudent} />
               <StudentList
                 students={students}
@@ -220,6 +280,7 @@ function App() {
           py: 3, 
           px: 2, 
           mt: 'auto', 
+          width: '100%',
           backgroundColor: customColors.black,
           color: customColors.white
         }}>
