@@ -14,7 +14,7 @@ Sistema de gerenciamento financeiro para controle de mensalidades da equipe de J
 
 - React + TypeScript
 - Node.js + Express
-- MongoDB
+- Sqlite
 - Material-UI para interface
 - Vite para build
 
