@@ -1,6 +1,6 @@
 import { Student, Payment, Event, Notice } from '../types';
 
-const API_URL = '/api';
+const API_URL = 'http://localhost:3001/api';
 
 async function getStudents(): Promise<Student[]> {
   const response = await fetch(`${API_URL}/students`);
@@ -25,17 +25,39 @@ async function addStudent(student: Omit<Student, 'id' | 'payments' | 'createdAt'
 }
 
 async function updatePayment(studentId: number, payment: Omit<Payment, 'id' | 'StudentId'>): Promise<Student> {
-  const response = await fetch(`${API_URL}/students/${studentId}/payment`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payment)
-  });
-  if (!response.ok) {
-    throw new Error('Erro ao atualizar pagamento');
+  try {
+    const response = await fetch(`${API_URL}/students/${studentId}/payment`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        ...payment,
+        paidAt: payment.status === 'paid' ? 
+          (payment.paidAt ? payment.paidAt.toISOString() : new Date().toISOString()) : 
+          null
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Erro ao atualizar pagamento');
+    }
+
+    const data = await response.json();
+    
+    // Garantir que as datas sejam convertidas corretamente
+    return {
+      ...data,
+      payments: data.payments?.map(p => ({
+        ...p,
+        paidAt: p.paidAt ? new Date(p.paidAt) : null
+      }))
+    };
+  } catch (error) {
+    console.error('Erro na requisição:', error);
+    throw error;
   }
-  return response.json();
 }
 
 // Event methods

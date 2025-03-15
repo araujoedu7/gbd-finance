@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { Sequelize, DataTypes } from 'sequelize';
+import { Sequelize, DataTypes, Model } from 'sequelize';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -17,125 +17,73 @@ app.use(express.json());
 // SQLite connection
 const sequelize = new Sequelize({
   dialect: 'sqlite',
-  storage: path.join(__dirname, '../../database.sqlite'),
-  logging: false
+  storage: path.resolve(__dirname, '..', '..', 'database.sqlite'),
+  logging: false,
 });
 
 // Models
-const Student = sequelize.define('Student', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true
-  },
-  name: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
-  phone: {
-    type: DataTypes.STRING,
-    allowNull: false
-  }
-});
+interface StudentAttributes {
+  id: number;
+  name: string;
+  phone: string;
+  Payments?: Payment[];
+}
 
-const Payment = sequelize.define('Payment', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true
-  },
-  month: {
-    type: DataTypes.INTEGER,
-    allowNull: false
-  },
-  year: {
-    type: DataTypes.INTEGER,
-    allowNull: false
-  },
-  status: {
-    type: DataTypes.ENUM('paid', 'unpaid'),
-    allowNull: false,
-    defaultValue: 'unpaid'
-  },
-  paidAt: {
-    type: DataTypes.DATE,
-    allowNull: true
-  }
-});
+interface PaymentAttributes {
+  id: number;
+  month: number;
+  year: number;
+  status: 'paid' | 'unpaid';
+  paidAt: Date | null;
+  StudentId: number;
+}
 
-const Event = sequelize.define('Event', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true
-  },
-  title: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
-  description: {
-    type: DataTypes.TEXT,
-    allowNull: false
-  },
-  date: {
-    type: DataTypes.DATE,
-    allowNull: false
-  },
-  type: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    validate: {
-      isIn: [['meeting', 'competition', 'training', 'other']]
-    }
-  },
-  location: {
-    type: DataTypes.STRING,
-    allowNull: true
-  }
-});
+interface PaymentCreationAttributes extends Omit<PaymentAttributes, 'id'> {}
 
-const Notice = sequelize.define('Notice', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true
-  },
-  title: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
-  content: {
-    type: DataTypes.TEXT,
-    allowNull: false
-  },
-  priority: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    validate: {
-      isIn: [['high', 'medium', 'low']]
-    }
-  },
-  createdAt: {
-    type: DataTypes.DATE,
-    allowNull: false,
-    defaultValue: DataTypes.NOW
-  },
-  expiresAt: {
-    type: DataTypes.DATE,
-    allowNull: true
-  }
-});
+class Student extends Model<StudentAttributes> implements StudentAttributes {
+  public id!: number;
+  public name!: string;
+  public phone!: string;
+  public Payments?: Payment[];
+}
 
-// Relationships
+class Payment extends Model<PaymentAttributes, PaymentCreationAttributes> implements PaymentAttributes {
+  public id!: number;
+  public month!: number;
+  public year!: number;
+  public status!: 'paid' | 'unpaid';
+  public paidAt!: Date | null;
+  public StudentId!: number;
+}
+
+Student.init(
+  {
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    name: { type: DataTypes.STRING, allowNull: false },
+    phone: { type: DataTypes.STRING, allowNull: false },
+  },
+  { sequelize, modelName: 'Student' }
+);
+
+Payment.init(
+  {
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    month: { type: DataTypes.INTEGER, allowNull: false },
+    year: { type: DataTypes.INTEGER, allowNull: false },
+    status: { type: DataTypes.ENUM('paid', 'unpaid'), allowNull: false, defaultValue: 'unpaid' },
+    paidAt: { type: DataTypes.DATE, allowNull: true },
+    StudentId: { type: DataTypes.INTEGER, allowNull: false }
+  },
+  { sequelize, modelName: 'Payment' }
+);
+
 Student.hasMany(Payment);
 Payment.belongsTo(Student);
 
 // Routes
 app.get('/api/students', async (req, res) => {
   try {
-    const students = await Student.findAll({
-      include: [Payment]
-    });
+    const students = await Student.findAll({ include: [Payment] });
     res.json(students);
   } catch (error) {
     console.error('Erro ao buscar estudantes:', error);
@@ -155,166 +103,129 @@ app.post('/api/students', async (req, res) => {
 
 app.put('/api/students/:id/payment', async (req, res) => {
   try {
-    const { id } = req.params;
-    const payment = req.body;
+    const studentId = parseInt(req.params.id, 10);
+    if (isNaN(studentId)) {
+      return res.status(400).json({ error: 'ID do estudante inválido' });
+    }
 
-    const student = await Student.findByPk(id);
+    const { month, year, status, paidAt } = req.body;
+
+    console.log('Recebido payload:', { studentId, month, year, status, paidAt });
+
+    // Validar e converter dados
+    const monthNum = parseInt(month, 10);
+    const yearNum = parseInt(year, 10);
+
+    if (isNaN(monthNum) || monthNum < 1 || monthNum > 12) {
+      return res.status(400).json({ error: 'Mês inválido' });
+    }
+
+    if (isNaN(yearNum) || yearNum < 2000 || yearNum > 2100) {
+      return res.status(400).json({ error: 'Ano inválido' });
+    }
+
+    if (!status) {
+      return res.status(400).json({ error: 'Status é obrigatório' });
+    }
+
+    if (!['paid', 'unpaid'].includes(status)) {
+      return res.status(400).json({ error: 'Status inválido, deve ser paid ou unpaid' });
+    }
+
+    const student = await Student.findByPk(studentId);
     if (!student) {
+      console.log('Estudante não encontrado:', studentId);
       return res.status(404).json({ error: 'Estudante não encontrado' });
     }
 
-    const [paymentRecord] = await Payment.findOrCreate({
-      where: {
-        StudentId: id,
-        month: payment.month,
-        year: payment.year
-      },
-      defaults: {
-        status: payment.status,
-        paidAt: payment.paidAt
-      }
-    });
+    try {
+      // Procura ou cria o pagamento
+      const [paymentRecord, created] = await Payment.findOrCreate({
+        where: { 
+          StudentId: studentId, 
+          month: monthNum, 
+          year: yearNum 
+        },
+        defaults: {
+          StudentId: studentId,
+          month: monthNum,
+          year: yearNum,
+          status: status as 'paid' | 'unpaid',
+          paidAt: status === 'paid' ? new Date() : null
+        }
+      });
 
-    if (paymentRecord) {
-      await paymentRecord.update({
-        status: payment.status,
-        paidAt: payment.paidAt
+      if (!created) {
+        // Se o pagamento já existia, atualiza
+        await paymentRecord.update({
+          status: status as 'paid' | 'unpaid',
+          paidAt: status === 'paid' ? new Date() : null
+        });
+      }
+
+      // Busca o estudante atualizado com todos os pagamentos
+      const updatedStudent = await Student.findByPk(studentId, { 
+        include: [{
+          model: Payment,
+          required: false
+        }],
+        order: [
+          [Payment, 'year', 'DESC'],
+          [Payment, 'month', 'ASC']
+        ]
+      });
+
+      if (!updatedStudent) {
+        console.log('Estudante não encontrado após atualização');
+        return res.status(404).json({ error: 'Estudante não encontrado após atualização' });
+      }
+
+      // Verifica se o pagamento foi atualizado corretamente
+      const updatedPayment = updatedStudent.Payments?.find(
+        p => p.month === monthNum && p.year === yearNum
+      );
+
+      if (!updatedPayment) {
+        console.log('Pagamento não encontrado após atualização');
+        return res.status(500).json({ error: 'Pagamento não encontrado após atualização' });
+      }
+
+      if (updatedPayment.status !== status) {
+        console.log('Status do pagamento não foi atualizado corretamente:', {
+          expected: status,
+          received: updatedPayment.status
+        });
+        return res.status(500).json({ 
+          error: 'Status do pagamento não foi atualizado corretamente',
+          expected: status,
+          received: updatedPayment.status
+        });
+      }
+
+      console.log('Pagamento atualizado com sucesso:', updatedPayment.toJSON());
+      res.json(updatedStudent);
+    } catch (err) {
+      const error = err as Error;
+      console.error('Erro ao salvar/atualizar pagamento:', error);
+      return res.status(500).json({ 
+        error: 'Erro ao salvar/atualizar pagamento', 
+        details: error.message 
       });
     }
-
-    const updatedStudent = await Student.findByPk(id, {
-      include: [Payment]
+  } catch (err) {
+    const error = err as Error;
+    console.error('Erro ao processar requisição:', error);
+    res.status(500).json({ 
+      error: 'Erro ao atualizar pagamento', 
+      details: error.message 
     });
-
-    res.json(updatedStudent);
-  } catch (error) {
-    console.error('Erro ao atualizar pagamento:', error);
-    res.status(500).json({ error: 'Erro ao atualizar pagamento' });
   }
 });
 
-// Event Routes
-app.get('/api/events', async (req, res) => {
-  try {
-    const events = await Event.findAll({
-      order: [['date', 'ASC']]
-    });
-    res.json(events);
-  } catch (error) {
-    console.error('Erro ao buscar eventos:', error);
-    res.status(500).json({ error: 'Erro ao buscar eventos' });
-  }
-});
-
-app.post('/api/events', async (req, res) => {
-  try {
-    const event = await Event.create(req.body);
-    res.status(201).json(event);
-  } catch (error) {
-    console.error('Erro ao criar evento:', error);
-    res.status(400).json({ error: 'Erro ao criar evento' });
-  }
-});
-
-app.put('/api/events/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const event = await Event.findByPk(id);
-    
-    if (!event) {
-      return res.status(404).json({ error: 'Evento não encontrado' });
-    }
-
-    await event.update(req.body);
-    res.json(event);
-  } catch (error) {
-    console.error('Erro ao atualizar evento:', error);
-    res.status(400).json({ error: 'Erro ao atualizar evento' });
-  }
-});
-
-app.delete('/api/events/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const event = await Event.findByPk(id);
-    
-    if (!event) {
-      return res.status(404).json({ error: 'Evento não encontrado' });
-    }
-
-    await event.destroy();
-    res.status(204).send();
-  } catch (error) {
-    console.error('Erro ao excluir evento:', error);
-    res.status(400).json({ error: 'Erro ao excluir evento' });
-  }
-});
-
-// Notice Routes
-app.get('/api/notices', async (req, res) => {
-  try {
-    const notices = await Notice.findAll({
-      order: [['createdAt', 'DESC']]
-    });
-    res.json(notices);
-  } catch (error) {
-    console.error('Erro ao buscar avisos:', error);
-    res.status(500).json({ error: 'Erro ao buscar avisos' });
-  }
-});
-
-app.post('/api/notices', async (req, res) => {
-  try {
-    const notice = await Notice.create(req.body);
-    res.status(201).json(notice);
-  } catch (error) {
-    console.error('Erro ao criar aviso:', error);
-    res.status(400).json({ error: 'Erro ao criar aviso' });
-  }
-});
-
-app.put('/api/notices/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const notice = await Notice.findByPk(id);
-    
-    if (!notice) {
-      return res.status(404).json({ error: 'Aviso não encontrado' });
-    }
-
-    await notice.update(req.body);
-    res.json(notice);
-  } catch (error) {
-    console.error('Erro ao atualizar aviso:', error);
-    res.status(400).json({ error: 'Erro ao atualizar aviso' });
-  }
-});
-
-app.delete('/api/notices/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const notice = await Notice.findByPk(id);
-    
-    if (!notice) {
-      return res.status(404).json({ error: 'Aviso não encontrado' });
-    }
-
-    await notice.destroy();
-    res.status(204).send();
-  } catch (error) {
-    console.error('Erro ao excluir aviso:', error);
-    res.status(400).json({ error: 'Erro ao excluir aviso' });
-  }
-});
-
-// Initialize database and start server
+// Start server
 sequelize.sync()
   .then(() => {
     console.log('Banco de dados sincronizado');
-    app.listen(port, () => {
-      console.log(`Servidor rodando na porta ${port}`);
-    });
+    app.listen(port, () => console.log(`Servidor rodando na porta ${port}`));
   })
-  .catch((error) => {
-    console.error('Erro ao sincronizar banco de dados:', error);
-  }); 
+  .catch(error => console.error('Erro ao sincronizar banco de dados:', error));

@@ -18,6 +18,7 @@ import {
   Card,
   CardContent,
   IconButton,
+  Checkbox,
 } from '@mui/material';
 import { 
   PeopleAlt as PeopleIcon, 
@@ -78,24 +79,52 @@ export function StudentList({
   };
 
   const handlePaymentToggle = async (student: Student, month: number, year: number) => {
-    try {
-      const currentStatus = getPaymentStatus(student, month, filterOptions.year);
-      const newStatus = currentStatus === 'paid' ? 'unpaid' : 'paid';
+    const currentStatus = getPaymentStatus(student, month, year);
+    const newStatus: 'paid' | 'unpaid' = currentStatus === 'paid' ? 'unpaid' : 'paid';
+    
+    // Atualiza o estado local imediatamente
+    setStudents(prevStudents => 
+      prevStudents.map(s => {
+        if (s.id === student.id) {
+          const updatedPayments = [...(s.payments || [])];
+          const existingPayment = updatedPayments.find(
+            p => p.month === month && p.year === year
+          );
 
-      const updatedStudent = await api.updatePayment(student.id, {
+          if (existingPayment) {
+            existingPayment.status = newStatus;
+            existingPayment.paidAt = newStatus === 'paid' ? new Date() : undefined;
+          } else {
+            updatedPayments.push({
+              id: Date.now(),
+              StudentId: student.id,
+              month,
+              year,
+              status: newStatus,
+              paidAt: newStatus === 'paid' ? new Date() : undefined
+            });
+          }
+
+          return {
+            ...s,
+            payments: updatedPayments
+          };
+        }
+        return s;
+      })
+    );
+
+    // Atualiza no servidor em segundo plano
+    try {
+      await api.updatePayment(student.id, {
         month,
         year,
         status: newStatus,
-        paidAt: newStatus === 'paid' ? new Date() : undefined,
+        paidAt: newStatus === 'paid' ? new Date() : undefined
       });
-
-      // Atualiza o estado local com o estudante atualizado
-      setStudents(prevStudents => 
-        prevStudents.map(s => s.id === updatedStudent.id ? updatedStudent : s)
-      );
     } catch (error) {
-      console.error('Erro ao atualizar pagamento:', error);
-      alert('Erro ao atualizar pagamento. Tente novamente.');
+      console.error('Erro ao sincronizar com servidor:', error);
+      // Não reverte o estado local para manter a experiência do usuário fluida
     }
   };
 
@@ -284,19 +313,24 @@ export function StudentList({
 
           <FormControlLabel
             control={
-              <Switch
+              <Checkbox
+                id="filter-unpaid-checkbox"
                 checked={filterOptions.showOnlyUnpaid}
                 onChange={(e) => onFilterChange({
                   ...filterOptions,
                   showOnlyUnpaid: e.target.checked,
                 })}
                 sx={{
-                  '& .MuiSwitch-switchBase.Mui-checked': {
+                  color: customColors.white,
+                  '&.Mui-checked': {
                     color: customColors.gold,
                   },
-                  '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                    backgroundColor: customColors.goldLight,
+                  '&:hover': {
+                    backgroundColor: 'rgba(212, 175, 55, 0.08)',
                   },
+                }}
+                inputProps={{
+                  'aria-label': 'Mostrar apenas alunos inadimplentes'
                 }}
               />
             }
@@ -305,6 +339,7 @@ export function StudentList({
                 Mostrar apenas inadimplentes
               </Typography>
             }
+            htmlFor="filter-unpaid-checkbox"
           />
         </Box>
       </Paper>
@@ -427,29 +462,41 @@ export function StudentList({
                         borderBottom: `1px solid ${customColors.grayLight}`,
                       }}
                     >
-                      <Switch
-                        checked={isPaid}
-                        onChange={() => handlePaymentToggle(student, month, filterOptions.year)}
-                        sx={{
-                          '& .MuiSwitch-switchBase.Mui-checked': {
-                            color: customColors.gold,
-                          },
-                          '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                            backgroundColor: customColors.goldLight,
-                          },
-                        }}
+                      <FormControlLabel
+                        control={
+                          <Checkbox
+                            id={`payment-checkbox-${student.id}-${month}-${filterOptions.year}`}
+                            checked={isPaid}
+                            onChange={() => handlePaymentToggle(student, month, filterOptions.year)}
+                            sx={{
+                              color: '#757575',
+                              '&.Mui-checked': {
+                                color: customColors.gold,
+                              },
+                              '&:hover': {
+                                backgroundColor: 'rgba(212, 175, 55, 0.08)',
+                              },
+                            }}
+                            inputProps={{
+                              'aria-label': `Alterar status de pagamento de ${student.name} para ${MONTHS[month-1]} de ${filterOptions.year}`
+                            }}
+                          />
+                        }
+                        label={
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              display: 'block',
+                              color: isPaid ? customColors.gold : '#757575',
+                              fontSize: '0.7rem',
+                              fontWeight: isPaid ? 'bold' : 'normal'
+                            }}
+                          >
+                            {isPaid ? 'PAGO' : 'PENDENTE'}
+                          </Typography>
+                        }
+                        labelPlacement="bottom"
                       />
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          display: 'block',
-                          marginTop: '4px',
-                          color: isPaid ? customColors.gold : '#757575',
-                          fontSize: '0.7rem'
-                        }}
-                      >
-                        {isPaid ? 'PAGO' : 'PENDENTE'}
-                      </Typography>
                     </TableCell>
                   );
                 })}
