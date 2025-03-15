@@ -25,14 +25,7 @@ Sistema de gerenciamento financeiro para controle de mensalidades da equipe de J
    ```bash
    npm install
    ```
-3. Configure as variáveis de ambiente:
-   - Crie um arquivo `.env` na raiz do projeto
-   - Adicione as seguintes variáveis:
-     ```
-     MONGODB_URI=sua_url_do_mongodb
-     PORT=3000
-     ```
-4. Execute o projeto:
+3. Execute o projeto:
    ```bash
    npm run dev:all
    ```
