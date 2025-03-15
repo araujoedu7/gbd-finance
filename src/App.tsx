@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Container, CssBaseline, ThemeProvider, AppBar, Toolbar, Typography, Tabs, Tab, Paper } from '@mui/material';
+import { Box, Container, CssBaseline, ThemeProvider, AppBar, Toolbar, Typography, Tabs, Tab, Paper, IconButton } from '@mui/material';
 import { createTheme } from '@mui/material/styles';
 import { ptBR } from '@mui/material/locale';
-import { Home as HomeIcon, AttachMoney as AttachMoneyIcon } from '@mui/icons-material';
+import { Home as HomeIcon, AttachMoney as AttachMoneyIcon, ArrowBack as ArrowBackIcon, ArrowForward as ArrowForwardIcon } from '@mui/icons-material';
 import { StudentList } from './components/StudentList';
 import { AddStudent } from './components/AddStudent';
 import api from './services/api';
@@ -111,6 +111,27 @@ function TabPanel(props: TabPanelProps) {
 }
 
 function Home() {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const images = [
+    '/images/team-photo.png',
+    '/images/team-photo2.png',
+    '/images/team-photo3.png'
+  ];
+
+  const handlePrevImage = () => {
+    setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  };
+
+  const handleNextImage = () => {
+    setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+  };
+
+  // Efeito para trocar as imagens automaticamente a cada 5 segundos
+  useEffect(() => {
+    const timer = setInterval(handleNextImage, 5000);
+    return () => clearInterval(timer);
+  }, []);
+
   return (
     <Box sx={{ width: '100%' }}>
       <Typography variant="h4" gutterBottom align="center" sx={{ mb: 4 }}>
@@ -122,35 +143,116 @@ function Home() {
         flexDirection: { xs: 'column', md: 'row' },
         overflow: 'hidden',
         bgcolor: customColors.white,
-        borderRadius: 2
+        borderRadius: 2,
+        height: { xs: 'auto', md: '600px' },
       }}>
         <Box sx={{ 
           width: { xs: '100%', md: '50%' },
-          minHeight: { xs: '300px', md: '400px' },
+          height: { xs: '400px', md: '600px' },
           position: 'relative',
           overflow: 'hidden',
           bgcolor: customColors.gold,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
+          flexShrink: 0,
+          flexGrow: 0,
         }}>
           <Box
-            component="img"
-            src="http://localhost:5173/images/team-photo.png"
-            alt="Gold Black Dragons Team"
             sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
               width: '100%',
               height: '100%',
-              objectFit: 'cover',
-              objectPosition: 'center',
-              display: 'block'
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden'
             }}
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.onerror = null;
-              console.error('Erro ao carregar a imagem:', target.src);
+          >
+            <Box
+              component="img"
+              src={`http://localhost:5173${images[currentImageIndex]}`}
+              alt={`Gold Black Dragons Team ${currentImageIndex + 1}`}
+              sx={{
+                maxWidth: '100%',
+                maxHeight: '100%',
+                objectFit: 'contain',
+                backgroundColor: customColors.gold,
+                display: 'block'
+              }}
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.onerror = null;
+                console.error('Erro ao carregar a imagem:', target.src);
+              }}
+            />
+          </Box>
+
+          <IconButton
+            onClick={handlePrevImage}
+            sx={{
+              position: 'absolute',
+              left: 8,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              zIndex: 2,
+              color: customColors.white,
+              bgcolor: 'rgba(0, 0, 0, 0.4)',
+              '&:hover': {
+                bgcolor: 'rgba(0, 0, 0, 0.6)',
+              }
             }}
-          />
+          >
+            <ArrowBackIcon />
+          </IconButton>
+
+          <IconButton
+            onClick={handleNextImage}
+            sx={{
+              position: 'absolute',
+              right: 8,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              zIndex: 2,
+              color: customColors.white,
+              bgcolor: 'rgba(0, 0, 0, 0.4)',
+              '&:hover': {
+                bgcolor: 'rgba(0, 0, 0, 0.6)',
+              }
+            }}
+          >
+            <ArrowForwardIcon />
+          </IconButton>
+
+          <Box
+            sx={{
+              position: 'absolute',
+              bottom: 16,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              display: 'flex',
+              gap: 1,
+              zIndex: 2
+            }}
+          >
+            {images.map((_, index) => (
+              <Box
+                key={index}
+                onClick={() => setCurrentImageIndex(index)}
+                sx={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  bgcolor: index === currentImageIndex ? customColors.gold : 'rgba(255, 255, 255, 0.5)',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    transform: 'scale(1.2)',
+                    bgcolor: index === currentImageIndex ? customColors.gold : 'rgba(255, 255, 255, 0.8)',
+                  }
+                }}
+              />
+            ))}
+          </Box>
         </Box>
 
         <Box sx={{ 
@@ -158,7 +260,8 @@ function Home() {
           p: 4,
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'center'
+          justifyContent: 'center',
+          height: { xs: 'auto', md: '100%' },
         }}>
           <Typography variant="h5" gutterBottom sx={{ color: customColors.black, mb: 2 }}>
             Sobre a Equipe
