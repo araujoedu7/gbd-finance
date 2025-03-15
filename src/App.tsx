@@ -7,7 +7,6 @@ import { StudentList } from './components/StudentList';
 import { AddStudent } from './components/AddStudent';
 import api from './services/api';
 import { Student, Payment } from './types';
-import teamPhoto from './assets/team-photo.jpg';
 
 // Definindo as cores personalizadas
 export const customColors = {
@@ -130,11 +129,14 @@ function Home() {
           minHeight: { xs: '300px', md: '400px' },
           position: 'relative',
           overflow: 'hidden',
-          bgcolor: customColors.goldLight
+          bgcolor: customColors.gold,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
         }}>
           <Box
             component="img"
-            src={teamPhoto}
+            src="http://localhost:5173/images/team-photo.png"
             alt="Gold Black Dragons Team"
             sx={{
               width: '100%',
@@ -146,7 +148,7 @@ function Home() {
             onError={(e) => {
               const target = e.target as HTMLImageElement;
               target.onerror = null;
-              console.error('Erro ao carregar a imagem');
+              console.error('Erro ao carregar a imagem:', target.src);
             }}
           />
         </Box>
