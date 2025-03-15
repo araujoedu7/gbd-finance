@@ -34,7 +34,7 @@ Sistema de gerenciamento financeiro para controle de mensalidades da equipe de J
      ```
 4. Execute o projeto:
    ```bash
-   npm run dev
+   npm run dev:all
    ```
 
 ## Estrutura do Projeto
