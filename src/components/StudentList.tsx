@@ -1,34 +1,33 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
+  Box,
+  Paper,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
-  Switch,
-  Box,
-  TextField,
+  Typography,
+  FormControl,
+  InputLabel,
+  Select,
   MenuItem,
   FormControlLabel,
-  Typography,
-  Tooltip,
-  Grid,
-  Card,
-  CardContent,
-  IconButton,
   Checkbox,
+  Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Grid,
+  Chip,
+  TablePagination,
 } from '@mui/material';
-import { 
-  PeopleAlt as PeopleIcon, 
-  AttachMoney as MoneyIcon,
-  Warning as WarningIcon,
-  CheckCircle as CheckIcon,
-  CheckCircle as PaidIcon,
-  RadioButtonUnchecked as UnpaidIcon,
-} from '@mui/icons-material';
 import { Student, Payment } from '../types';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import api from '../services/api';
 
 interface FilterOptions {
@@ -39,9 +38,16 @@ interface FilterOptions {
 
 interface StudentListProps {
   students: Student[];
-  filterOptions: FilterOptions;
-  onPaymentStatusChange: (studentId: number, payment: Omit<Payment, 'id' | 'StudentId'>) => void;
-  onFilterChange: (newOptions: FilterOptions) => void;
+  filterOptions: {
+    showOnlyUnpaid: boolean;
+    month: number;
+    year: number;
+  };
+  onFilterChange: (options: {
+    showOnlyUnpaid: boolean;
+    month: number;
+    year: number;
+  }) => void;
   setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
 }
 
@@ -62,13 +68,12 @@ const customColors = {
   grayLight: '#F5F5F5'
 };
 
-export function StudentList({
+export const StudentList: React.FC<StudentListProps> = ({
   students,
   filterOptions,
-  onPaymentStatusChange,
   onFilterChange,
   setStudents,
-}: StudentListProps) {
+}) => {
   const currentYear = new Date().getFullYear();
 
   const getPaymentStatus = (student: Student, month: number, year: number): 'paid' | 'unpaid' => {
@@ -159,7 +164,7 @@ export function StudentList({
       {/* Dashboard */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ 
+          <Paper sx={{ 
             bgcolor: customColors.gold, 
             color: customColors.black,
             boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
@@ -169,18 +174,17 @@ export function StudentList({
               boxShadow: '0 6px 12px rgba(0, 0, 0, 0.15)',
             }
           }}>
-            <CardContent>
+            <Paper sx={{ p: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <PeopleIcon sx={{ mr: 1, color: customColors.black }} />
                 <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Total de Alunos</Typography>
               </Box>
               <Typography variant="h4" sx={{ fontWeight: 'bold' }}>{getTotalStudents()}</Typography>
-            </CardContent>
-          </Card>
+            </Paper>
+          </Paper>
         </Grid>
         
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ 
+          <Paper sx={{ 
             bgcolor: customColors.gold, 
             color: customColors.black,
             boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
@@ -190,18 +194,17 @@ export function StudentList({
               boxShadow: '0 6px 12px rgba(0, 0, 0, 0.15)',
             }
           }}>
-            <CardContent>
+            <Paper sx={{ p: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <CheckIcon sx={{ mr: 1, color: customColors.black }} />
                 <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Pagamentos em Dia</Typography>
               </Box>
               <Typography variant="h4" sx={{ fontWeight: 'bold' }}>{getTotalPaid()}</Typography>
-            </CardContent>
-          </Card>
+            </Paper>
+          </Paper>
         </Grid>
         
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ 
+          <Paper sx={{ 
             bgcolor: customColors.gold, 
             color: customColors.black,
             boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
@@ -211,18 +214,17 @@ export function StudentList({
               boxShadow: '0 6px 12px rgba(0, 0, 0, 0.15)',
             }
           }}>
-            <CardContent>
+            <Paper sx={{ p: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <WarningIcon sx={{ mr: 1, color: customColors.black }} />
                 <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Pagamentos Pendentes</Typography>
               </Box>
               <Typography variant="h4" sx={{ fontWeight: 'bold' }}>{getTotalUnpaid()}</Typography>
-            </CardContent>
-          </Card>
+            </Paper>
+          </Paper>
         </Grid>
         
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ 
+          <Paper sx={{ 
             bgcolor: customColors.gold, 
             color: customColors.black,
             boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
@@ -232,14 +234,13 @@ export function StudentList({
               boxShadow: '0 6px 12px rgba(0, 0, 0, 0.15)',
             }
           }}>
-            <CardContent>
+            <Paper sx={{ p: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <MoneyIcon sx={{ mr: 1, color: customColors.black }} />
                 <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Taxa de Pagamento</Typography>
               </Box>
               <Typography variant="h4" sx={{ fontWeight: 'bold' }}>{getPaymentPercentage().toFixed(1)}%</Typography>
-            </CardContent>
-          </Card>
+            </Paper>
+          </Paper>
         </Grid>
       </Grid>
 
@@ -389,9 +390,7 @@ export function StudentList({
                     minWidth: '80px'
                   }}
                 >
-                  <Tooltip title={`${month} de ${filterOptions.year}`}>
-                    <Typography variant="subtitle2">{month.substring(0, 3)}</Typography>
-                  </Tooltip>
+                  <Typography variant="subtitle2">{month.substring(0, 3)}</Typography>
                 </TableCell>
               ))}
             </TableRow>

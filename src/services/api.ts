@@ -49,7 +49,7 @@ async function updatePayment(studentId: number, payment: Omit<Payment, 'id' | 'S
     // Garantir que as datas sejam convertidas corretamente
     return {
       ...data,
-      payments: data.payments?.map(p => ({
+      payments: data.payments?.map((p: Payment) => ({
         ...p,
         paidAt: p.paidAt ? new Date(p.paidAt) : null
       }))
