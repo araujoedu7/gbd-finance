@@ -7,7 +7,9 @@
     "dev:server": "ts-node-dev --respawn --transpile-only src/server/index.ts",
     "dev:all": "concurrently \"npm run dev\" \"npm run dev:server\"",
     "build": "tsc && vite build",
-    "serve": "vite preview"
+    "build:server": "tsc -p tsconfig.server.json",
+    "serve": "vite preview",
+    "start": "node dist/server/index.js"
   },
   "dependencies": {
     "@emotion/react": "^11.11.3",

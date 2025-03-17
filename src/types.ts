@@ -35,4 +35,15 @@ export interface Payment {
   StudentId: number;
 }
 
+export interface TeamNotice {
+  id: number;
+  title: string;
+  content: string;
+  createdAt: Date;
+  updatedAt: Date;
+  priority: 'low' | 'medium' | 'high';
+  author: string;
+  isActive: boolean;
+}
+
 // ... rest of the types ... 

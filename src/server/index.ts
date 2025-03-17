@@ -14,6 +14,11 @@ const port = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
+// Servir arquivos estáticos em produção
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '..', 'client')));
+}
+
 // SQLite connection
 const sequelize = new Sequelize({
   dialect: 'sqlite',
@@ -40,6 +45,17 @@ interface PaymentAttributes {
 
 interface PaymentCreationAttributes extends Omit<PaymentAttributes, 'id'> {}
 
+interface TeamNoticeAttributes {
+  id: number;
+  title: string;
+  content: string;
+  createdAt: Date;
+  updatedAt: Date;
+  priority: 'low' | 'medium' | 'high';
+  author: string;
+  isActive: boolean;
+}
+
 class Student extends Model<StudentAttributes> implements StudentAttributes {
   public id!: number;
   public name!: string;
@@ -54,6 +70,17 @@ class Payment extends Model<PaymentAttributes, PaymentCreationAttributes> implem
   public status!: 'paid' | 'unpaid';
   public paidAt!: Date | null;
   public StudentId!: number;
+}
+
+class TeamNotice extends Model<TeamNoticeAttributes> implements TeamNoticeAttributes {
+  public id!: number;
+  public title!: string;
+  public content!: string;
+  public createdAt!: Date;
+  public updatedAt!: Date;
+  public priority!: 'low' | 'medium' | 'high';
+  public author!: string;
+  public isActive!: boolean;
 }
 
 Student.init(
@@ -75,6 +102,20 @@ Payment.init(
     StudentId: { type: DataTypes.INTEGER, allowNull: false }
   },
   { sequelize, modelName: 'Payment' }
+);
+
+TeamNotice.init(
+  {
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    title: { type: DataTypes.STRING, allowNull: false },
+    content: { type: DataTypes.TEXT, allowNull: false },
+    createdAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
+    updatedAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
+    priority: { type: DataTypes.ENUM('low', 'medium', 'high'), allowNull: false, defaultValue: 'medium' },
+    author: { type: DataTypes.STRING, allowNull: false },
+    isActive: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true }
+  },
+  { sequelize, modelName: 'TeamNotice' }
 );
 
 Student.hasMany(Payment);
@@ -221,6 +262,69 @@ app.put('/api/students/:id/payment', async (req, res) => {
     });
   }
 });
+
+// Rotas para avisos da equipe
+app.get('/api/team-notices', async (req, res) => {
+  try {
+    const notices = await TeamNotice.findAll({
+      where: { isActive: true },
+      order: [['createdAt', 'DESC']]
+    });
+    res.json(notices);
+  } catch (error) {
+    console.error('Erro ao buscar avisos:', error);
+    res.status(500).json({ error: 'Erro ao buscar avisos' });
+  }
+});
+
+app.post('/api/team-notices', async (req, res) => {
+  try {
+    const notice = await TeamNotice.create({
+      ...req.body,
+      author: req.body.author || 'Sistema',
+      isActive: true
+    });
+    res.status(201).json(notice);
+  } catch (error) {
+    console.error('Erro ao criar aviso:', error);
+    res.status(500).json({ error: 'Erro ao criar aviso' });
+  }
+});
+
+app.put('/api/team-notices/:id', async (req, res) => {
+  try {
+    const notice = await TeamNotice.findByPk(req.params.id);
+    if (!notice) {
+      return res.status(404).json({ error: 'Aviso não encontrado' });
+    }
+    await notice.update(req.body);
+    res.json(notice);
+  } catch (error) {
+    console.error('Erro ao atualizar aviso:', error);
+    res.status(500).json({ error: 'Erro ao atualizar aviso' });
+  }
+});
+
+app.delete('/api/team-notices/:id', async (req, res) => {
+  try {
+    const notice = await TeamNotice.findByPk(req.params.id);
+    if (!notice) {
+      return res.status(404).json({ error: 'Aviso não encontrado' });
+    }
+    await notice.update({ isActive: false });
+    res.json({ message: 'Aviso removido com sucesso' });
+  } catch (error) {
+    console.error('Erro ao deletar aviso:', error);
+    res.status(500).json({ error: 'Erro ao deletar aviso' });
+  }
+});
+
+// Rota para o frontend em produção
+if (process.env.NODE_ENV === 'production') {
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'client', 'index.html'));
+  });
+}
 
 // Start server
 sequelize.sync()

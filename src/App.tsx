@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Box, Container, CssBaseline, ThemeProvider, AppBar, Toolbar, Typography, Tabs, Tab, Paper, IconButton } from '@mui/material';
 import { createTheme } from '@mui/material/styles';
 import { ptBR } from '@mui/material/locale';
-import { Home as HomeIcon, AttachMoney as AttachMoneyIcon, ArrowBack as ArrowBackIcon, ArrowForward as ArrowForwardIcon } from '@mui/icons-material';
+import { Home as HomeIcon, AttachMoney as AttachMoneyIcon, ArrowBack as ArrowBackIcon, ArrowForward as ArrowForwardIcon, Event as EventIcon } from '@mui/icons-material';
 import { StudentList } from './components/StudentList';
 import { AddStudent } from './components/AddStudent';
+import TeamNotices from './components/TeamNotices';
 import api from './services/api';
 import { Student, Payment } from './types';
 
@@ -357,6 +358,10 @@ function App() {
               icon={<AttachMoneyIcon />} 
               label="Financeiro"
             />
+            <Tab 
+              icon={<EventIcon />} 
+              label="Avisos"
+            />
           </Tabs>
         </AppBar>
 
@@ -386,6 +391,10 @@ function App() {
                 setStudents={setStudents}
               />
             </Box>
+          </TabPanel>
+
+          <TabPanel value={currentTab} index={2}>
+            <TeamNotices />
           </TabPanel>
         </Container>
 
