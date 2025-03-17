@@ -1,5 +1,4 @@
 import { Box, Typography, Paper } from '@mui/material';
-import { customColors } from '../App';
 
 export const TeamInfo: React.FC = () => {
   return (

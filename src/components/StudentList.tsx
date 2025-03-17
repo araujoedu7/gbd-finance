@@ -49,6 +49,7 @@ interface StudentListProps {
     year: number;
   }) => void;
   setStudents: React.Dispatch<React.SetStateAction<Student[]>>;
+  onPaymentStatusChange: (studentId: number, payment: Omit<Payment, 'id' | 'StudentId'>) => Promise<void>;
 }
 
 const MONTHS = [
@@ -73,6 +74,7 @@ export const StudentList: React.FC<StudentListProps> = ({
   filterOptions,
   onFilterChange,
   setStudents,
+  onPaymentStatusChange,
 }) => {
   const currentYear = new Date().getFullYear();
 
@@ -121,7 +123,7 @@ export const StudentList: React.FC<StudentListProps> = ({
 
     // Atualiza no servidor em segundo plano
     try {
-      await api.updatePayment(student.id, {
+      await onPaymentStatusChange(student.id, {
         month,
         year,
         status: newStatus,

@@ -132,10 +132,10 @@ app.get('/api/students', async (req, res) => {
   }
 });
 
-app.post('/api/students', async (req, res) => {
+app.post('/api/students', async (_req, res) => {
   try {
-    const student = await Student.create(req.body);
-    res.status(201).json(student);
+    const student = await Student.create(_req.body);
+    res.json(student);
   } catch (error) {
     console.error('Erro ao criar estudante:', error);
     res.status(500).json({ error: 'Erro ao criar estudante' });
@@ -277,14 +277,14 @@ app.get('/api/team-notices', async (req, res) => {
   }
 });
 
-app.post('/api/team-notices', async (req, res) => {
+app.post('/api/team-notices', async (_req, res) => {
   try {
     const notice = await TeamNotice.create({
-      ...req.body,
-      author: req.body.author || 'Sistema',
+      ..._req.body,
+      author: _req.body.author || 'Sistema',
       isActive: true
     });
-    res.status(201).json(notice);
+    res.json(notice);
   } catch (error) {
     console.error('Erro ao criar aviso:', error);
     res.status(500).json({ error: 'Erro ao criar aviso' });
@@ -321,7 +321,7 @@ app.delete('/api/team-notices/:id', async (req, res) => {
 
 // Rota para o frontend em produção
 if (process.env.NODE_ENV === 'production') {
-  app.get('*', (req, res) => {
+  app.get('*', (_req, res) => {
     res.sendFile(path.join(__dirname, '..', 'client', 'index.html'));
   });
 }
