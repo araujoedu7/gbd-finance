@@ -449,10 +449,6 @@ export const StudentList: React.FC<StudentListProps> = ({
                 {MONTHS.map((_, index) => {
                   const month = index + 1;
                   const isPaid = getPaymentStatus(student, month, filterOptions.year) === 'paid';
-                  const payment = student.payments?.find(
-                    (p) => p.month === month && p.year === filterOptions.year
-                  );
-                  const paidDate = payment?.paidAt ? new Date(payment.paidAt).toLocaleDateString() : '';
 
                   return (
                     <TableCell 

@@ -137,7 +137,6 @@ app.post('/api/students', async (_req, res) => {
     const student = await Student.create(_req.body);
     res.json(student);
   } catch (error) {
-    console.error('Erro ao criar estudante:', error);
     res.status(500).json({ error: 'Erro ao criar estudante' });
   }
 });
@@ -286,7 +285,6 @@ app.post('/api/team-notices', async (_req, res) => {
     });
     res.json(notice);
   } catch (error) {
-    console.error('Erro ao criar aviso:', error);
     res.status(500).json({ error: 'Erro ao criar aviso' });
   }
 });
